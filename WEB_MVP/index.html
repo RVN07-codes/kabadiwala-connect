@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#087443" />
+  <title>Kabadiwala Connect</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">♻</div>
+        <div>
+          <h1>Kabadiwala <span>Connect</span></h1>
+          <p>Better Scrap. A Cleaner Tomorrow.</p>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="showScreen('notifications')" aria-label="Notifications">🔔</button>
+    </header>
+
+    <main id="app"></main>
+
+    <nav class="bottom-nav">
+      <button data-screen="home" onclick="showScreen('home')">⌂<span>Home</span></button>
+      <button data-screen="lots" onclick="showScreen('lots')">▣<span>My Lots</span></button>
+      <button data-screen="earnings" onclick="showScreen('earnings')">₹<span>Earnings</span></button>
+      <button data-screen="profile" onclick="showScreen('profile')">○<span>Profile</span></button>
+    </nav>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
