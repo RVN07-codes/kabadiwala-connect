@@ -24,3 +24,4 @@ This is an MVP prototype. AI identification, recycler data, price data, payments
 5. Add multilingual voice assistance.
 6. Add real QR handover and transaction ledger.
 7. Add field-tested UX changes from scrap collectors.
+https://www.figma.com/make/jaK8p6DvKilfotVpjjtis4/Kabadiwala-Connect-App-UI?t=Z91TgnzqHKp8K0GQ-6
