@@ -1,102 +1,293 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { router } from 'expo-router';
 import {
+  SafeAreaView,
+  ScrollView,
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  TextInput,
+  StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 
-const scraps = [
-  { name: 'Paper', icon: '📄', rate: 12 },
-  { name: 'Plastic', icon: '🧴', rate: 25 },
-  { name: 'Metal', icon: '🔩', rate: 45 },
-  { name: 'E-Waste', icon: '📱', rate: 80 },
+import { useApp } from '@/context/AppContext';
+import { ScrapCategory } from '@/types';
+
+const materials: {
+  category: ScrapCategory;
+  icon: string;
+  description: string;
+  rate: number;
+}[] = [
+  {
+    category: 'Mobile Phones',
+    icon: '📱',
+    description: 'Old or damaged smartphones',
+    rate: 300,
+  },
+  {
+    category: 'Computers & Laptops',
+    icon: '💻',
+    description: 'Laptops, CPUs and computer parts',
+    rate: 280,
+  },
+  {
+    category: 'LCD / LED Displays',
+    icon: '🖥️',
+    description: 'LCD, LED and monitor panels',
+    rate: 70,
+  },
+  {
+    category: 'PCB',
+    icon: '🧩',
+    description: 'Printed circuit boards',
+    rate: 150,
+  },
+  {
+    category: 'Cables & Wires',
+    icon: '🔌',
+    description: 'Copper and electronic cables',
+    rate: 65,
+  },
+  {
+    category: 'Battery',
+    icon: '🔋',
+    description: 'Used electronic batteries',
+    rate: 80,
+  },
+  {
+    category: 'Printers',
+    icon: '🖨️',
+    description: 'Printers and printer components',
+    rate: 55,
+  },
+  {
+    category: 'CRT',
+    icon: '📺',
+    description: 'Old CRT televisions and monitors',
+    rate: 35,
+  },
+  {
+    category: 'Motors & Components',
+    icon: '⚙️',
+    description: 'Electronic motors and assemblies',
+    rate: 90,
+  },
+  {
+    category: 'Mixed E-Waste',
+    icon: '📦',
+    description: 'Mixed electronic components',
+    rate: 80,
+  },
 ];
 
 export default function SellScreen() {
-  const [selected, setSelected] = useState('Plastic');
-  const [quantity, setQuantity] = useState(1);
+  const { createLot, setSelectedLot } = useApp();
 
-  const scrap = scraps.find((x) => x.name === selected)!;
-  const total = scrap.rate * quantity;
+  const [selectedCategory, setSelectedCategory] =
+    useState<ScrapCategory>('Mobile Phones');
+
+  const [weight, setWeight] = useState('');
+
+  const selectedMaterial = materials.find(
+    (item) => item.category === selectedCategory
+  );
+
+  const rate = selectedMaterial?.rate ?? 0;
+
+  const numericWeight = parseFloat(weight) || 0;
+
+  const estimatedValue = Math.round(rate * numericWeight);
+
+  const createEwasteLot = () => {
+    if (numericWeight <= 0) {
+      return;
+    }
+
+    const newLot = createLot(
+      selectedCategory,
+      selectedCategory,
+      numericWeight,
+      estimatedValue
+    );
+
+    setSelectedLot(newLot);
+
+    router.push('/pickup');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>‹ Back</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>Sell your scrap</Text>
+        <Text style={styles.title}>Create E-Waste Lot</Text>
+
         <Text style={styles.subtitle}>
-          Select the material you want to recycle.
+          Add the electronic waste you want to sell to the recycling network.
         </Text>
 
-        <Text style={styles.heading}>Scrap category</Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoIcon}>♻️</Text>
 
-        <View style={styles.grid}>
-          {scraps.map((item) => (
-            <TouchableOpacity
-              key={item.name}
-              onPress={() => setSelected(item.name)}
-              style={[
-                styles.card,
-                selected === item.name && styles.selectedCard,
-              ]}
-            >
-              <Text style={styles.icon}>{item.icon}</Text>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.rate}>₹{item.rate}/kg</Text>
-            </TouchableOpacity>
-          ))}
+          <View style={styles.infoContent}>
+            <Text style={styles.infoTitle}>
+              Why create a lot?
+            </Text>
+
+            <Text style={styles.infoText}>
+              Your e-waste receives a unique reference ID and can be matched
+              with authorized recyclers.
+            </Text>
+          </View>
         </View>
 
-        <Text style={styles.heading}>Quantity</Text>
+        <Text style={styles.sectionTitle}>
+          1. Select E-Waste Type
+        </Text>
 
-        <View style={styles.quantityBox}>
-          <TouchableOpacity
-            style={styles.circle}
-            onPress={() => setQuantity(Math.max(1, quantity - 1))}
-          >
-            <Text style={styles.control}>−</Text>
-          </TouchableOpacity>
+        <View style={styles.materialGrid}>
+          {materials.map((item) => {
+            const selected =
+              selectedCategory === item.category;
 
+            return (
+              <TouchableOpacity
+                key={item.category}
+                style={[
+                  styles.materialCard,
+                  selected && styles.selectedMaterial,
+                ]}
+                onPress={() =>
+                  setSelectedCategory(item.category)
+                }
+              >
+                <Text style={styles.materialIcon}>
+                  {item.icon}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.materialName,
+                    selected && styles.selectedText,
+                  ]}
+                >
+                  {item.category}
+                </Text>
+
+                <Text style={styles.materialDescription}>
+                  {item.description}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={styles.sectionTitle}>
+          2. Enter Approximate Weight
+        </Text>
+
+        <View style={styles.weightContainer}>
+          <TextInput
+            value={weight}
+            onChangeText={setWeight}
+            keyboardType="decimal-pad"
+            placeholder="Example: 2.75"
+            placeholderTextColor="#999"
+            style={styles.weightInput}
+          />
+
+          <Text style={styles.unit}>kg</Text>
+        </View>
+
+        <Text style={styles.helper}>
+          You can enter values like 0.5, 1.25, 2.75 or 12.5 kg.
+        </Text>
+
+        <Text style={styles.sectionTitle}>
+          3. Estimated Value
+        </Text>
+
+        <View style={styles.valueCard}>
           <View>
-            <Text style={styles.quantity}>{quantity.toFixed(1)}</Text>
-            <Text style={styles.kg}>kilograms</Text>
+            <Text style={styles.valueLabel}>
+              INDICATIVE RATE
+            </Text>
+
+            <Text style={styles.rate}>
+              ₹{rate}/kg
+            </Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.circle}
-            onPress={() => setQuantity(quantity + 1)}
-          >
-            <Text style={styles.control}>+</Text>
-          </TouchableOpacity>
+          <Text style={styles.multiply}>×</Text>
+
+          <View>
+            <Text style={styles.valueLabel}>
+              WEIGHT
+            </Text>
+
+            <Text style={styles.rate}>
+              {numericWeight || 0} kg
+            </Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View>
+            <Text style={styles.valueLabel}>
+              ESTIMATED VALUE
+            </Text>
+
+            <Text style={styles.total}>
+              ₹{estimatedValue}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.estimate}>
-          <Text style={styles.estimateLabel}>Estimated value</Text>
-          <Text style={styles.amount}>₹{total}</Text>
-          <Text style={styles.calculation}>
-            {quantity} kg × ₹{scrap.rate}/kg
-          </Text>
-        </View>
+        <Text style={styles.disclaimer}>
+          * This is an indicative estimate. Final value may vary based on
+          quality, verified weight, material composition and recycler offer.
+        </Text>
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push('/pickup')}
+          style={[
+            styles.createButton,
+            numericWeight <= 0 && styles.disabledButton,
+          ]}
+          disabled={numericWeight <= 0}
+          onPress={createEwasteLot}
         >
-          <Text style={styles.buttonText}>Continue to Pickup →</Text>
+          <Text style={styles.createButtonText}>
+            Create E-Waste Lot →
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.aiButton}
           onPress={() => router.push('/ai')}
         >
-          <Text style={styles.aiText}>✨ Identify with AI instead</Text>
+          <Text style={styles.aiIcon}>🤖</Text>
+
+          <View style={styles.aiContent}>
+            <Text style={styles.aiTitle}>
+              Not sure what it is?
+            </Text>
+
+            <Text style={styles.aiText}>
+              Let Scrap2Cash AI identify the e-waste.
+            </Text>
+          </View>
+
+          <Text style={styles.aiArrow}>›</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -104,137 +295,247 @@ export default function SellScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F9F7' },
-  content: { padding: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F7F9F7',
+  },
 
-  back: {
-    fontSize: 16,
-    color: '#176B3A',
+  content: {
+    padding: 20,
+    paddingBottom: 45,
+  },
+
+  backButton: {
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+
+  backText: {
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: 20,
+    color: '#1B7F3A',
   },
 
   title: {
     fontSize: 29,
-    fontWeight: '900',
-    color: '#17231C',
+    fontWeight: '800',
   },
 
   subtitle: {
-    color: '#77817B',
+    color: '#707070',
+    fontSize: 14,
+    lineHeight: 21,
     marginTop: 6,
-    marginBottom: 30,
   },
 
-  heading: {
-    fontSize: 17,
+  infoCard: {
+    backgroundColor: '#EAF6ED',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 20,
+    flexDirection: 'row',
+  },
+
+  infoIcon: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+
+  infoContent: {
+    flex: 1,
+  },
+
+  infoTitle: {
+    fontSize: 15,
     fontWeight: '800',
-    marginBottom: 14,
-    color: '#26342B',
+    color: '#185E2E',
   },
 
-  grid: {
+  infoText: {
+    color: '#477052',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 26,
+    marginBottom: 12,
+  },
+
+  materialGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    rowGap: 12,
   },
 
-  card: {
+  materialCard: {
     width: '48%',
-    backgroundColor: '#fff',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 15,
+    minHeight: 145,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+
+  selectedMaterial: {
+    borderWidth: 2,
+    borderColor: '#1B7F3A',
+    backgroundColor: '#F0F9F2',
+  },
+
+  materialIcon: {
+    fontSize: 30,
+  },
+
+  materialName: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 9,
+  },
+
+  selectedText: {
+    color: '#1B7F3A',
+  },
+
+  materialDescription: {
+    color: '#888',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 5,
+  },
+
+  weightContainer: {
+    backgroundColor: 'white',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+
+  weightInput: {
+    flex: 1,
+    fontSize: 22,
+    fontWeight: '700',
+    paddingVertical: 16,
+    color: '#222',
+  },
+
+  unit: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#555',
+  },
+
+  helper: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 7,
+  },
+
+  valueCard: {
+    backgroundColor: 'white',
     borderRadius: 18,
     padding: 18,
-    marginBottom: 14,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 2,
   },
 
-  selectedCard: {
-    borderColor: '#176B3A',
-    backgroundColor: '#EDF7F0',
+  valueLabel: {
+    color: '#888',
+    fontSize: 9,
+    fontWeight: '800',
+    marginBottom: 4,
   },
-
-  icon: { fontSize: 32, marginBottom: 12 },
-  name: { fontSize: 15, fontWeight: '800', color: '#27372D' },
 
   rate: {
-    marginTop: 5,
-    color: '#176B3A',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
 
-  quantityBox: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
+  multiply: {
+    color: '#999',
+    fontSize: 20,
   },
 
-  circle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#EAF3EC',
-    justifyContent: 'center',
-    alignItems: 'center',
+  divider: {
+    width: 1,
+    height: 45,
+    backgroundColor: '#DDD',
   },
 
-  control: {
-    fontSize: 26,
-    color: '#176B3A',
-  },
-
-  quantity: {
-    textAlign: 'center',
-    fontSize: 25,
+  total: {
+    fontSize: 21,
     fontWeight: '900',
+    color: '#1B7F3A',
   },
 
-  kg: {
-    color: '#7D877F',
-    fontSize: 12,
+  disclaimer: {
+    color: '#888',
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 10,
+  },
+
+  createButton: {
+    backgroundColor: '#1B7F3A',
+    paddingVertical: 17,
+    borderRadius: 14,
+    marginTop: 22,
+  },
+
+  disabledButton: {
+    backgroundColor: '#AAB8AE',
+  },
+
+  createButtonText: {
+    color: 'white',
     textAlign: 'center',
-  },
-
-  estimate: {
-    backgroundColor: '#176B3A',
-    borderRadius: 20,
-    padding: 22,
-    marginBottom: 20,
-  },
-
-  estimateLabel: { color: '#CFE7D6', fontSize: 13 },
-  amount: { color: '#fff', fontSize: 34, fontWeight: '900', marginTop: 5 },
-
-  calculation: {
-    color: '#D9EEE0',
-    marginTop: 5,
-  },
-
-  button: {
-    backgroundColor: '#176B3A',
-    borderRadius: 15,
-    padding: 17,
-    alignItems: 'center',
-  },
-
-  buttonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '800',
   },
 
   aiButton: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+
+  aiIcon: {
+    fontSize: 27,
+    marginRight: 12,
+  },
+
+  aiContent: {
+    flex: 1,
+  },
+
+  aiTitle: {
+    fontSize: 14,
+    fontWeight: '800',
   },
 
   aiText: {
-    color: '#176B3A',
-    fontWeight: '700',
+    color: '#777',
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  aiArrow: {
+    fontSize: 28,
+    color: '#1B7F3A',
   },
 });

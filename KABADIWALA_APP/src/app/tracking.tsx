@@ -1,92 +1,115 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
+  SafeAreaView,
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { useApp } from '@/context/AppContext';
+
 const statuses = [
-  'Pickup requested',
-  'Kabadiwala accepted',
-  'Kabadiwala on the way',
-  'Scrap picked up',
-  'Payment completed',
+  'Listed',
+  'Pickup Requested',
+  'Accepted',
+  'Picked Up',
+  'Handover Completed',
+  'Payment Completed',
 ];
 
 export default function TrackingScreen() {
-  const [current, setCurrent] = useState(1);
+  const { selectedLot, updateLot } = useApp();
+
+  const [currentIndex, setCurrentIndex] = useState(
+    Math.max(
+      0,
+      statuses.indexOf(selectedLot?.status || 'Listed')
+    )
+  );
 
   const nextStatus = () => {
-    if (current < statuses.length - 1) {
-      setCurrent(current + 1);
+    if (!selectedLot) return;
+
+    if (currentIndex < statuses.length - 1) {
+      const nextIndex = currentIndex + 1;
+
+      setCurrentIndex(nextIndex);
+
+      updateLot(selectedLot.id, {
+        status: statuses[nextIndex] as any,
+      });
     } else {
-      Alert.alert('Completed! 🎉', 'Your scrap transaction is complete.');
+      Alert.alert(
+        'Transaction Complete',
+        'The scrap lot has completed the recycling chain.'
+      );
     }
   };
+
+  if (!selectedLot) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <Text>No scrap lot selected.</Text>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.replace('/collector')}
+          >
+            <Text style={styles.buttonText}>Go Home</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <TouchableOpacity onPress={() => router.replace('/')}>
-          <Text style={styles.back}>‹ Home</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>Lot Tracking</Text>
 
-        <Text style={styles.title}>Pickup tracking</Text>
+        <Text style={styles.lotId}>{selectedLot.id}</Text>
 
-        <View style={styles.statusCard}>
-          <Text style={styles.live}>● LIVE STATUS</Text>
+        <View style={styles.summary}>
+          <Text style={styles.material}>
+            {selectedLot.material}
+          </Text>
 
-          <Text style={styles.statusTitle}>{statuses[current]}</Text>
-
-          <Text style={styles.statusSub}>
-            Raj Scrap Center • Bhusawal
+          <Text>
+            {selectedLot.weight} kg • ₹{selectedLot.estimatedValue}
           </Text>
         </View>
 
-        <Text style={styles.heading}>Pickup progress</Text>
-
         <View style={styles.timeline}>
           {statuses.map((status, index) => {
-            const completed = index <= current;
+            const completed = index <= currentIndex;
 
             return (
-              <View key={status} style={styles.timelineRow}>
-                <View style={styles.lineContainer}>
-                  <View
-                    style={[
-                      styles.dot,
-                      completed && styles.completedDot,
-                    ]}
-                  >
-                    {completed && <Text style={styles.check}>✓</Text>}
-                  </View>
-
-                  {index !== statuses.length - 1 && (
-                    <View
-                      style={[
-                        styles.line,
-                        index < current && styles.completedLine,
-                      ]}
-                    />
-                  )}
-                </View>
+              <View style={styles.timelineRow} key={status}>
+                <View
+                  style={[
+                    styles.dot,
+                    completed && styles.completed,
+                  ]}
+                />
 
                 <View style={styles.timelineText}>
                   <Text
                     style={[
                       styles.status,
-                      completed && styles.completedText,
+                      completed && styles.statusCompleted,
                     ]}
                   >
                     {status}
                   </Text>
 
-                  {index === current && (
-                    <Text style={styles.now}>Current status</Text>
+                  {index === currentIndex && (
+                    <Text style={styles.current}>
+                      Current status
+                    </Text>
                   )}
                 </View>
               </View>
@@ -94,31 +117,22 @@ export default function TrackingScreen() {
           })}
         </View>
 
-        <View style={styles.orderCard}>
-          <Text style={styles.orderTitle}>Pickup details</Text>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Material</Text>
-            <Text style={styles.value}>Plastic</Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Quantity</Text>
-            <Text style={styles.value}>5 kg</Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Estimated value</Text>
-            <Text style={styles.amount}>₹125</Text>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.button} onPress={nextStatus}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={nextStatus}
+        >
           <Text style={styles.buttonText}>
-            {current === statuses.length - 1
-              ? 'Transaction Complete'
+            {currentIndex === statuses.length - 1
+              ? 'Complete'
               : 'Simulate Next Status →'}
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.homeButton}
+          onPress={() => router.replace('/collector')}
+        >
+          <Text>← Back to Dashboard</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -126,154 +140,84 @@ export default function TrackingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F9F7' },
-
-  content: { padding: 20, flex: 1 },
-
-  back: {
-    color: '#176B3A',
-    fontWeight: '700',
-    marginBottom: 20,
+  container: {
+    flex: 1,
+    backgroundColor: '#F7F9F7',
   },
-
+  content: {
+    padding: 24,
+  },
   title: {
-    fontSize: 29,
-    fontWeight: '900',
-    color: '#17231C',
-    marginBottom: 22,
-  },
-
-  statusCard: {
-    backgroundColor: '#176B3A',
-    borderRadius: 22,
-    padding: 22,
-    marginBottom: 28,
-  },
-
-  live: {
-    color: '#BDE5C8',
-    fontSize: 11,
+    fontSize: 28,
     fontWeight: '800',
   },
-
-  statusTitle: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '900',
-    marginTop: 10,
+  lotId: {
+    color: '#777',
+    marginTop: 5,
   },
-
-  statusSub: {
-    color: '#D0E9D7',
-    marginTop: 6,
+  summary: {
+    backgroundColor: 'white',
+    padding: 18,
+    borderRadius: 16,
+    marginTop: 20,
   },
-
-  heading: {
-    fontSize: 18,
+  material: {
+    fontSize: 19,
     fontWeight: '800',
-    marginBottom: 18,
+    marginBottom: 5,
   },
-
+  timeline: {
+    marginTop: 30,
+  },
   timelineRow: {
     flexDirection: 'row',
-    minHeight: 55,
-  },
-
-  lineContainer: {
-    width: 35,
     alignItems: 'center',
+    marginBottom: 22,
   },
-
   dot: {
-    width: 25,
-    height: 25,
-    borderRadius: 13,
-    backgroundColor: '#DDE3DF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#CCC',
   },
-
-  completedDot: {
-    backgroundColor: '#176B3A',
+  completed: {
+    backgroundColor: '#1B7F3A',
+    borderColor: '#1B7F3A',
   },
-
-  check: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '900',
-  },
-
-  line: {
-    width: 2,
-    flex: 1,
-    backgroundColor: '#DDE3DF',
-  },
-
-  completedLine: {
-    backgroundColor: '#176B3A',
-  },
-
   timelineText: {
-    paddingLeft: 12,
+    marginLeft: 15,
   },
-
   status: {
-    fontSize: 14,
-    color: '#8A938D',
+    color: '#999',
     fontWeight: '600',
   },
-
-  completedText: {
-    color: '#26352C',
-    fontWeight: '800',
+  statusCompleted: {
+    color: '#222',
   },
-
-  now: {
-    color: '#176B3A',
-    fontSize: 11,
+  current: {
+    color: '#1B7F3A',
+    fontSize: 12,
     marginTop: 3,
   },
-
-  orderCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 18,
-    marginTop: 18,
-  },
-
-  orderTitle: {
-    fontWeight: '800',
-    fontSize: 15,
-    marginBottom: 12,
-  },
-
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 9,
-  },
-
-  label: { color: '#7C867F', fontSize: 13 },
-  value: { fontWeight: '700', fontSize: 13 },
-
-  amount: {
-    color: '#176B3A',
-    fontWeight: '900',
-    fontSize: 15,
-  },
-
   button: {
-    backgroundColor: '#176B3A',
-    padding: 17,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginTop: 'auto',
+    backgroundColor: '#1B7F3A',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 15,
   },
-
   buttonText: {
-    color: '#fff',
-    fontSize: 15,
+    color: 'white',
+    textAlign: 'center',
     fontWeight: '800',
+  },
+  homeButton: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
